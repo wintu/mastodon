@@ -4,6 +4,8 @@ class AccountsController < ApplicationController
   include AccountControllerConcern
   include SignatureVerification
 
+  before_action :authenticate_user!
+
   def show
     respond_to do |format|
       format.html do

@@ -549,7 +549,7 @@ DEPENDENCIES
   pg (~> 0.20)
   pghero (~> 1.7)
   pkg-config (~> 1.2)
-  pry-rails (~> 0.3)
+  pry-rails
   puma (~> 3.8)
   pundit (~> 1.1)
   rabl (~> 0.13)

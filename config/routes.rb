@@ -13,6 +13,8 @@ Rails.application.routes.draw do
     mount PgHero::Engine, at: 'pghero', as: :pghero
   end
 
+  post '/gamio_create_account', to: 'gamio#create_account'
+
   use_doorkeeper do
     controllers authorizations: 'oauth/authorizations', authorized_applications: 'oauth/authorized_applications'
   end
@@ -90,7 +92,7 @@ Rails.application.routes.draw do
     resources :subscriptions, only: [:index]
     resources :domain_blocks, only: [:index, :new, :create, :show, :destroy]
     resource :settings, only: [:edit, :update]
-    
+
     resources :instances, only: [:index] do
       collection do
         post :resubscribe

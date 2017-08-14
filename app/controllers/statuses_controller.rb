@@ -3,6 +3,8 @@
 class StatusesController < ApplicationController
   include Authorization
 
+  before_action :authenticate_user!
+
   layout 'public'
 
   before_action :set_account

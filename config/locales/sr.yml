@@ -4,13 +4,14 @@ sr:
     about_hashtag_html: Ово су јавни статуси таговани са <strong>#%{hashtag}</strong>. Можете одговарати на њих ако имате налог било где у федиверсу.
     about_mastodon_html: Мастодонт је друштвена мрежа базирана на отвореним протоколима и слободном софтверу отвореног кода. Децентрализована је као што је децентрализована е-пошта.
     about_this: О инстанци
+    administered_by: 'Администрирано од стране:'
+    api: API
+    apps: Мобилне апликације
     closed_registrations: Регистрације су тренутно затворене на овој инстанци. Ипак! Можете наћи другу инстанцу на којој ћете направити налог и одатле добити приступ истој овој мрежи.
     contact: Контакт
     contact_missing: Није постављено
     contact_unavailable: N/A
-    description_headline: Шта је %{domain}?
-    domain_count_after: остале инстанце
-    domain_count_before: Повезан на
+    documentation: Документација
     extended_description_html: |
       <h3>Добро место за правила</h3>
       <p>Проширени опис који још није постављен.</p>
@@ -27,24 +28,34 @@ sr:
     hosted_on: Мастодонт хостован на %{domain}
     learn_more: Сазнајте више
     other_instances: Листа инстанци
+    privacy_policy: Полиса приватности
     source_code: Изворни код
-    status_count_after: статуса
+    status_count_after:
+      one: статус
+      other: статуси
     status_count_before: Који су написали
-    user_count_after: корисника
+    terms: Услови коришћења
+    user_count_after:
+      one: корисник
+      other: корисници
     user_count_before: Дом за
     what_is_mastodon: Шта је Мастодонт?
   accounts:
+    choices_html: "%{name}'s избори:"
     follow: Follow
-    followers: Followers
+    followers:
+      one: Пратилац
+      other: Пратиоци
     following: Following
+    joined: Придружио/ла се %{date}
     media: Мултимедија
     moved_html: "%{name} је померен на %{new_profile_link}:"
+    network_hidden: Ова информација није доступна
     nothing_here: Овде нема ништа!
     people_followed_by: Људи које %{name} прати
     people_who_follow: Људи који прате %{name}
     posts: Тутови
     posts_with_replies: Тутови и одговори
-    remote_follow: Удаљена праћења
     reserved_username: Корисничко име је резервисано
     roles:
       admin: Администратор
@@ -52,9 +63,7 @@ sr:
     unfollow: Отпрати
   admin:
     account_moderation_notes:
-      account: Модератор
       create: Направи
-      created_at: Датум
       created_msg: Модераторска белешка успешно направљена!
       delete: Обриши
       destroyed_msg: Модераторска белешка успешно обрисана!
@@ -63,6 +72,7 @@ sr:
       by_domain: Домен
       confirm: Потврди
       confirmed: Потврђено
+      confirming: Потврдување
       demote: Ражалуј
       disable: Искључи
       disable_two_factor_authentication: Искључи 2FA
@@ -71,6 +81,7 @@ sr:
       domain: Домен
       edit: Измени
       email: Е-пошта
+      email_status: Е-пошта статус
       enable: Укључи
       enabled: Укључено
       feed_url: Адреса довода
@@ -108,6 +119,10 @@ sr:
       public: Јавно
       push_subscription_expires: PuSH subscription expires
       redownload: Освежи аватар
+      resend_confirmation:
+        already_confirmed: Овој корисник е веќе потврден
+        send: Препрати го е-мајлот за потврда
+        success: Е-пошта за потврда успешно испратена!
       reset: Ресетуј
       reset_password: Ресетуј лозинку
       resubscribe: Поново се претплати
@@ -158,32 +173,54 @@ sr:
         unsuspend_account: "%{name} је укинуо суспензију налогу %{target}"
         update_custom_emoji: "%{name} је изменио емотикон %{target}"
         update_status: "%{name} је изменио статус корисника %{target}"
+      deleted_status: "(обрисан статус)"
       title: Записник
     custom_emojis:
       by_domain: Домен
-      copied_msg: Успешно направљена локална копија емотикона
+      copied_msg: Успешно направљена локална копија емоџија
       copy: Копирај
-      copy_failed_msg: Не могу да направим локалну копију тог емотикона
-      created_msg: Емотикон успешно направљен!
+      copy_failed_msg: Не могу да направим локалну копију тог емотиџија
+      created_msg: Емоџи успешно направљен!
       delete: Обриши
-      destroyed_msg: Емотикон успешно обрисан!
+      destroyed_msg: Емоџи успешно обрисан!
       disable: Онемогући
-      disabled_msg: Емотикон успешно онемогућен
-      emoji: Емотикон
+      disabled_msg: Емоџи успешно онемогућен
+      emoji: Емоџи
       enable: Омогући
-      enabled_msg: Емотикон успешно омогућен
+      enabled_msg: Емоџи успешно омогућен
       image_hint: PNG до 50KB
       listed: Излистан
       new:
-        title: Додај нови произвољни емотикон
+        title: Додај нови произвољни емоџи
       overwrite: Препиши
       shortcode: Пречица
       shortcode_hint: Најмање 2 карактера, дозвољени су само слова, бројеви и доње црте
-      title: Произвољни емотикони
+      title: Произвољни емотиџији
       unlisted: Неизлистан
-      update_failed_msg: Не могу да ажурирам овај емотикон
-      updated_msg: емотикон успешно ажуриран!
+      update_failed_msg: Не могу да ажурирам овај емоџи
+      updated_msg: Емоџи успешно ажуриран!
       upload: Отпреми
+    dashboard:
+      backlog: Позадински записи
+      config: Конфигурација
+      feature_deletions: Брисање налога
+      feature_invites: Позивнице
+      feature_registrations: Регистрација
+      feature_relay: Федеративни релеј
+      features: Карактеристике
+      hidden_service: Федерација са скривеним услугама
+      open_reports: отворене пријаве
+      recent_users: Недавни корисници
+      search: Потпуна претрага текста
+      single_user_mode: Појединачни корисник
+      software: Софтвер
+      space: Коришћење простора
+      title: Командна табла
+      total_users: укупан број корисника
+      trends: Трендови
+      week_interactions: интеракције ове недеље
+      week_users_active: активно ове недеље
+      week_users_new: корисника ове недеље
     domain_blocks:
       add_new: Додај нови
       created_msg: Блокирање домена се обрађује
@@ -193,13 +230,13 @@ sr:
         create: Направи блокаду
         hint: Блокирање домена неће спречити прављење налога у бази, али ће ретроактивно и аутоматски применити одређене модераторске методе над тим налозима.
         severity:
-          desc_html: "<strong>Ућуткавање</strong> ће све статусе овог налога учинити невидиљивим за све, осим за оне који налог већ прате. <strong>Суспензија</strong> ће уклонити сав садржај налога, сву мултимедију, и профилне податке. Користите <strong>Ништа</strong> ако само желите да одбаците мултимедијалне фајлове."
+          desc_html: "<strong>Ућуткавање</strong> ће све статусе овог налога учинити невидљивим за све, осим за оне који већ прате налог. <strong>Суспензија</strong> ће уклонити сав садржај налога, сву мултимедију, и профилне податке. Користите <strong>Ништа</strong> само ако желите да одбаците мултимедијалне фајлове."
           noop: Ништа
           silence: Ућуткавање
           suspend: Суспензија
         title: Ново блокирање домена
       reject_media: Одбаци мултимедију
-      reject_media_hint: Уклања локално ускладиштене мултимедијске фајлове и одбија да их скида на даље. Небитно је за суспензију.
+      reject_media_hint: Уклања локално ускладиштене мултимедијске фајлове и одбија да их скида убудуће. Небитно је за суспензију
       severities:
         noop: Ништа
         silence: Ућуткавање
@@ -209,25 +246,25 @@ sr:
         affected_accounts:
           few: Утиче на %{count} налога у бази
           many: Утиче на %{count} налога у бази
-          one: Утиче на један налог у бази
-          other: Утиче на %{count} налога у бази
+          one: Један налог у бази података је под утицајем
+          other: Утиче на %{count} налога у бази података
         retroactive:
           silence: Угаси ућуткивање за све постојеће налоге са овог домена
-          suspend: Угаси суспензије за све постојеће налоге са овог домена
-        title: Поништи блокаду домена за домен %{domain}
+          suspend: Уклони суспензије за све постојеће налоге са овог домена
+        title: Поништи блокаду домена за %{domain}
         undo: Поништи
       title: Блокаде домена
       undo: Поништи
     email_domain_blocks:
-      add_new: Додај новуAdd new
-      created_msg: Успешно додао домен е-поште на црну листу
+      add_new: Додај нови
+      created_msg: Успешно додао домен Е-поште на црну листу
       delete: Уклони
-      destroyed_msg: Успешно уклоњен домен е-поште са црне листе
+      destroyed_msg: Успешно уклоњен домен Е-поште са црне листе
       domain: Домен
       new:
         create: Додај домен
-        title: Нова ставка у црној листи е-пошти
-      title: Црна листа адреса е-поште
+        title: Нова ставка е-поштe у црној листи
+      title: Црна листа E-поште
     instances:
       account_count: Познати налози
       domain_name: Домен
@@ -235,24 +272,22 @@ sr:
       search: Претрага
       title: Познате инстанце
     invites:
+      deactivate_all: Деактивирај све
       filter:
         all: Све
-        available: Активне
-        expired: Истекле
+        available: Доступни
+        expired: Истекли
         title: Филтер
       title: Позивнице
+    relays:
+      add_new: Додај нови релеј
     reports:
       action_taken_by: Акцију извео
       are_you_sure: Да ли сте сигурни?
       comment:
-        label: Коментар
         none: Ништа
-      delete: Обриши
       id: ID
       mark_as_resolved: Означи као решен
-      nsfw:
-        'false': Откриј медијске прилоге
-        'true': Сакриј медијске прилоге
       report: 'Пријава #%{id}'
       report_contents: Садржај
       reported_account: Пријављени налог
@@ -311,11 +346,8 @@ sr:
         delete: Обриши
         nsfw_off: NSFW искључен
         nsfw_on: NSFW укључен
-      execute: Изврши
       failed_to_execute: Неуспело извршавање
       media:
-        hide: Сакриј мултимедију
-        show: Прикажи мултимедију
         title: Мултимедија
       no_media: Без мултимедије
       title: Статуси налога
@@ -426,7 +458,6 @@ sr:
     unlocked_warning_title: Ваш налог није закључан
   generic:
     changes_saved_msg: Измене успешно сачуване!
-    powered_by: омогућио %{link}
     save_changes: Сними измене
     validation_errors:
       few: Нешто није баш како треба! Прегледајте %{count} грешке испод
@@ -464,8 +495,6 @@ sr:
       expires_at: Истиче
       uses: Коришћења
     title: Позови људе
-  landing_strip_html: "<strong>%{name}</strong> је корисник на %{link_to_root_path}. Можете га запратити или комуницирати са њим ако имте налог било где у федиверсу."
-  landing_strip_signup_html: Ако немате, можете се <a href="%{sign_up_path}">регистровати овде</a>.
   lists:
     errors:
       limit: Достигли сте лимит броја листи
@@ -529,20 +558,6 @@ sr:
     other: Остали
     publishing: Објављивање
     web: Веб
-  push_notifications:
-    favourite:
-      title: "%{name} је ставио Ваш статус за омиљени"
-    follow:
-      title: "%{name} Вас је запратио"
-    group:
-      title: "%{count} обавештења"
-    mention:
-      action_boost: Подржи
-      action_expand: Прикажи још
-      action_favourite: Омиљени
-      title: "%{name} Вас је поменуо"
-    reblog:
-      title: "%{name} је подржао(ла) Ваш статус"
   remote_follow:
     acct: Унесите Ваш корисник@домен са кога желите да пратите
     missing_resource: Не могу да нађем захтевану адресу преусмеравања за Ваш налог
@@ -620,79 +635,10 @@ sr:
       unlisted: Неизлистано
       unlisted_long: Свако може да види, али није излистано на јавним лајнама
   stream_entries:
-    click_to_show: Кликни да видиш
     pinned: Прикачени тут
     reblogged: подржано
     sensitive_content: Осетљив садржај
   terms:
-    body_html: |
-      <h2>Privacy Policy</h2>
-
-      <h3 id="collect">What information do we collect?</h3>
-
-      <p>We collect information from you when you register on our site and gather data when you participate in the forum by reading, writing, and evaluating the content shared here.</p>
-
-      <p>When registering on our site, you may be asked to enter your name and e-mail address. You may, however, visit our site without registering. Your e-mail address will be verified by an email containing a unique link. If that link is visited, we know that you control the e-mail address.</p>
-
-      <p>When registered and posting, we record the IP address that the post originated from. We also may retain server logs which include the IP address of every request to our server.</p>
-
-      <h3 id="use">What do we use your information for?</h3>
-
-      <p>Any of the information we collect from you may be used in one of the following ways:</p>
-
-      <ul>
-        <li>To personalize your experience &mdash; your information helps us to better respond to your individual needs.</li>
-        <li>To improve our site &mdash; we continually strive to improve our site offerings based on the information and feedback we receive from you.</li>
-        <li>To improve customer service &mdash; your information helps us to more effectively respond to your customer service requests and support needs.</li>
-        <li>To send periodic emails &mdash; The email address you provide may be used to send you information, notifications that you request about changes to topics or in response to your user name, respond to inquiries, and/or other requests or questions.</li>
-      </ul>
-
-      <h3 id="protect">How do we protect your information?</h3>
-
-      <p>We implement a variety of security measures to maintain the safety of your personal information when you enter, submit, or access your personal information.</p>
-
-      <h3 id="data-retention">What is your data retention policy?</h3>
-
-      <p>We will make a good faith effort to:</p>
-
-      <ul>
-        <li>Retain server logs containing the IP address of all requests to this server no more than 90 days.</li>
-        <li>Retain the IP addresses associated with registered users and their posts no more than 5 years.</li>
-      </ul>
-
-      <h3 id="cookies">Do we use cookies?</h3>
-
-      <p>Yes. Cookies are small files that a site or its service provider transfers to your computer's hard drive through your Web browser (if you allow). These cookies enable the site to recognize your browser and, if you have a registered account, associate it with your registered account.</p>
-
-      <p>We use cookies to understand and save your preferences for future visits and compile aggregate data about site traffic and site interaction so that we can offer better site experiences and tools in the future. We may contract with third-party service providers to assist us in better understanding our site visitors. These service providers are not permitted to use the information collected on our behalf except to help us conduct and improve our business.</p>
-
-      <h3 id="disclose">Do we disclose any information to outside parties?</h3>
-
-      <p>We do not sell, trade, or otherwise transfer to outside parties your personally identifiable information. This does not include trusted third parties who assist us in operating our site, conducting our business, or servicing you, so long as those parties agree to keep this information confidential. We may also release your information when we believe release is appropriate to comply with the law, enforce our site policies, or protect ours or others rights, property, or safety. However, non-personally identifiable visitor information may be provided to other parties for marketing, advertising, or other uses.</p>
-
-      <h3 id="third-party">Third party links</h3>
-
-      <p>Occasionally, at our discretion, we may include or offer third party products or services on our site. These third party sites have separate and independent privacy policies. We therefore have no responsibility or liability for the content and activities of these linked sites. Nonetheless, we seek to protect the integrity of our site and welcome any feedback about these sites.</p>
-
-      <h3 id="coppa">Children's Online Privacy Protection Act Compliance</h3>
-
-      <p>Our site, products and services are all directed to people who are at least 13 years old. If this server is in the USA, and you are under the age of 13, per the requirements of COPPA (<a href="https://en.wikipedia.org/wiki/Children%27s_Online_Privacy_Protection_Act">Children's Online Privacy Protection Act</a>) do not use this site.</p>
-
-      <h3 id="online">Online Privacy Policy Only</h3>
-
-      <p>This online privacy policy applies only to information collected through our site and not to information collected offline.</p>
-
-      <h3 id="consent">Your Consent</h3>
-
-      <p>By using our site, you consent to our web site privacy policy.</p>
-
-      <h3 id="changes">Changes to our Privacy Policy</h3>
-
-      <p>If we decide to change our privacy policy, we will post those changes on this page.</p>
-
-      <p>This document is CC-BY-SA. It was last updated May 31, 2013.</p>
-
-      <p>Originally adapted from the <a href="https://github.com/discourse/discourse">Discourse privacy policy</a>.</p>
     title: Услови коришћења и политика приватности инстанце %{instance}
   themes:
     default: Мастодонт

@@ -23,7 +23,7 @@ class Formatter
 
     unless status.local?
       html = reformat(raw_content)
-      html = encode_custom_emojis(html, status.emojis) if options[:custom_emojify]
+      html = encode_custom_emojis(html, status.emojis, options[:autoplay]) if options[:custom_emojify]
       return html.html_safe # rubocop:disable Rails/OutputSafety
     end
 
@@ -33,7 +33,7 @@ class Formatter
     html = raw_content
     html = "RT @#{prepend_reblog} #{html}" if prepend_reblog
     html = encode_and_link_urls(html, linkable_accounts)
-    html = encode_custom_emojis(html, status.emojis) if options[:custom_emojify]
+    html = encode_custom_emojis(html, status.emojis, options[:autoplay]) if options[:custom_emojify]
     html = simple_format(html, {}, sanitize: false)
     html = html.delete("\n")
 
@@ -51,18 +51,32 @@ class Formatter
     strip_tags(text)
   end
 
-  def simplified_format(account)
-    return reformat(account.note).html_safe unless account.local? # rubocop:disable Rails/OutputSafety
-    linkify(account.note)
+  def simplified_format(account, **options)
+    html = account.local? ? linkify(account.note) : reformat(account.note)
+    html = encode_custom_emojis(html, account.emojis, options[:autoplay]) if options[:custom_emojify]
+    html.html_safe # rubocop:disable Rails/OutputSafety
   end
 
   def sanitize(html, config)
     Sanitize.fragment(html, config)
   end
 
-  def format_spoiler(status)
+  def format_spoiler(status, **options)
     html = encode(status.spoiler_text)
-    html = encode_custom_emojis(html, status.emojis)
+    html = encode_custom_emojis(html, status.emojis, options[:autoplay])
+    html.html_safe # rubocop:disable Rails/OutputSafety
+  end
+
+  def format_display_name(account, **options)
+    html = encode(account.display_name.presence || account.username)
+    html = encode_custom_emojis(html, account.emojis, options[:autoplay]) if options[:custom_emojify]
+    html.html_safe # rubocop:disable Rails/OutputSafety
+  end
+
+  def format_field(account, str, **options)
+    return reformat(str).html_safe unless account.local? # rubocop:disable Rails/OutputSafety
+    html = encode_and_link_urls(str, me: true)
+    html = encode_custom_emojis(html, account.emojis, options[:autoplay]) if options[:custom_emojify]
     html.html_safe # rubocop:disable Rails/OutputSafety
   end
 
@@ -80,12 +94,17 @@ class Formatter
     HTMLEntities.new.encode(html)
   end
 
-  def encode_and_link_urls(html, accounts = nil)
+  def encode_and_link_urls(html, accounts = nil, options = {})
     entities = Extractor.extract_entities_with_indices(html, extract_url_without_protocol: false)
+
+    if accounts.is_a?(Hash)
+      options  = accounts
+      accounts = nil
+    end
 
     rewrite(html.dup, entities) do |entity|
       if entity[:url]
-        link_to_url(entity)
+        link_to_url(entity, options)
       elsif entity[:hashtag]
         link_to_hashtag(entity)
       elsif entity[:screen_name]
@@ -101,10 +120,14 @@ class Formatter
     end
   end
 
-  def encode_custom_emojis(html, emojis)
+  def encode_custom_emojis(html, emojis, animate = false)
     return html if emojis.empty?
 
-    emoji_map = emojis.map { |e| [e.shortcode, full_asset_url(e.image.url(:static))] }.to_h
+    emoji_map = if animate
+                  emojis.map { |e| [e.shortcode, full_asset_url(e.image.url)] }.to_h
+                else
+                  emojis.map { |e| [e.shortcode, full_asset_url(e.image.url(:static))] }.to_h
+                end
 
     i                     = -1
     tag_open_index        = nil
@@ -172,9 +195,11 @@ class Formatter
     result.flatten.join
   end
 
-  def link_to_url(entity)
+  def link_to_url(entity, options = {})
     url        = Addressable::URI.parse(entity[:url])
     html_attrs = { target: '_blank', rel: 'nofollow noopener' }
+
+    html_attrs[:rel] = "me #{html_attrs[:rel]}" if options[:me]
 
     Twitter::Autolink.send(:link_to_text, entity, link_html(entity[:url]), url, html_attrs)
   rescue Addressable::URI::InvalidURIError, IDN::Idna::IdnaError
@@ -194,7 +219,7 @@ class Formatter
     username, domain = acct.split('@')
 
     domain  = nil if TagManager.instance.local_domain?(domain)
-    account = Account.find_remote(username, domain)
+    account = EntityCache.instance.mention(username, domain)
 
     account ? mention_html(account) : "@#{acct}"
   end

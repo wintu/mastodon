@@ -4,10 +4,7 @@ import PropTypes from 'prop-types';
 import StatusListContainer from '../ui/containers/status_list_container';
 import Column from '../../components/column';
 import ColumnHeader from '../../components/column_header';
-import {
-  refreshHashtagTimeline,
-  expandHashtagTimeline,
-} from '../../actions/timelines';
+import { expandHashtagTimeline } from '../../actions/timelines';
 import { addColumn, removeColumn, moveColumn } from '../../actions/columns';
 import { FormattedMessage } from 'react-intl';
 import { connectHashtagStream } from '../../actions/streaming';
@@ -23,6 +20,7 @@ export default class HashtagTimeline extends React.PureComponent {
     params: PropTypes.object.isRequired,
     columnId: PropTypes.string,
     dispatch: PropTypes.func.isRequired,
+    shouldUpdateScroll: PropTypes.func,
     hasUnread: PropTypes.bool,
     multiColumn: PropTypes.bool,
   };
@@ -61,13 +59,13 @@ export default class HashtagTimeline extends React.PureComponent {
     const { dispatch } = this.props;
     const { id } = this.props.params;
 
-    dispatch(refreshHashtagTimeline(id));
+    dispatch(expandHashtagTimeline(id));
     this._subscribe(dispatch, id);
   }
 
   componentWillReceiveProps (nextProps) {
     if (nextProps.params.id !== this.props.params.id) {
-      this.props.dispatch(refreshHashtagTimeline(nextProps.params.id));
+      this.props.dispatch(expandHashtagTimeline(nextProps.params.id));
       this._unsubscribe();
       this._subscribe(this.props.dispatch, nextProps.params.id);
     }
@@ -81,17 +79,17 @@ export default class HashtagTimeline extends React.PureComponent {
     this.column = c;
   }
 
-  handleLoadMore = () => {
-    this.props.dispatch(expandHashtagTimeline(this.props.params.id));
+  handleLoadMore = maxId => {
+    this.props.dispatch(expandHashtagTimeline(this.props.params.id, { maxId }));
   }
 
   render () {
-    const { hasUnread, columnId, multiColumn } = this.props;
+    const { shouldUpdateScroll, hasUnread, columnId, multiColumn } = this.props;
     const { id } = this.props.params;
     const pinned = !!columnId;
 
     return (
-      <Column ref={this.setRef}>
+      <Column ref={this.setRef} label={`#${id}`}>
         <ColumnHeader
           icon='hashtag'
           active={hasUnread}
@@ -108,8 +106,9 @@ export default class HashtagTimeline extends React.PureComponent {
           trackScroll={!pinned}
           scrollKey={`hashtag_timeline-${columnId}`}
           timelineId={`hashtag:${id}`}
-          loadMore={this.handleLoadMore}
+          onLoadMore={this.handleLoadMore}
           emptyMessage={<FormattedMessage id='empty_column.hashtag' defaultMessage='There is nothing in this hashtag yet.' />}
+          shouldUpdateScroll={shouldUpdateScroll}
         />
       </Column>
     );

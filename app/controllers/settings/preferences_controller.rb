@@ -27,7 +27,7 @@ class Settings::PreferencesController < ApplicationController
   def user_params
     params.require(:user).permit(
       :locale,
-      filtered_languages: []
+      chosen_languages: []
     )
   end
 
@@ -35,6 +35,7 @@ class Settings::PreferencesController < ApplicationController
     params.require(:user).permit(
       :setting_default_privacy,
       :setting_default_sensitive,
+      :setting_default_language,
       :setting_unfollow_modal,
       :setting_boost_modal,
       :setting_delete_modal,
@@ -44,7 +45,8 @@ class Settings::PreferencesController < ApplicationController
       :setting_system_font_ui,
       :setting_noindex,
       :setting_theme,
-      notification_emails: %i(follow follow_request reblog favourite mention digest),
+      :setting_hide_network,
+      notification_emails: %i(follow follow_request reblog favourite mention digest report),
       interactions: %i(must_be_follower must_be_following)
     )
   end

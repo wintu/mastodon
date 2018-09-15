@@ -10,9 +10,13 @@ class AboutController < ApplicationController
     @initial_state_json   = serializable_resource.to_json
   end
 
-  def more; end
+  def more
+    render layout: 'public'
+  end
 
-  def terms; end
+  def terms
+    render layout: 'public'
+  end
 
   private
 
@@ -27,7 +31,7 @@ class AboutController < ApplicationController
   end
 
   def set_body_classes
-    @body_classes = 'about-body'
+    @body_classes = 'with-modals'
   end
 
   def initial_state_params

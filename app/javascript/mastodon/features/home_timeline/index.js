@@ -1,6 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import { expandHomeTimeline, refreshHomeTimeline } from '../../actions/timelines';
+import { expandHomeTimeline } from '../../actions/timelines';
 import PropTypes from 'prop-types';
 import StatusListContainer from '../ui/containers/status_list_container';
 import Column from '../../components/column';
@@ -16,7 +16,7 @@ const messages = defineMessages({
 
 const mapStateToProps = state => ({
   hasUnread: state.getIn(['timelines', 'home', 'unread']) > 0,
-  isPartial: state.getIn(['timelines', 'home', 'isPartial'], false),
+  isPartial: state.getIn(['timelines', 'home', 'items', 0], null) === null,
 });
 
 @connect(mapStateToProps)
@@ -25,6 +25,7 @@ export default class HomeTimeline extends React.PureComponent {
 
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
+    shouldUpdateScroll: PropTypes.func,
     intl: PropTypes.object.isRequired,
     hasUnread: PropTypes.bool,
     isPartial: PropTypes.bool,
@@ -55,8 +56,8 @@ export default class HomeTimeline extends React.PureComponent {
     this.column = c;
   }
 
-  handleLoadMore = () => {
-    this.props.dispatch(expandHomeTimeline());
+  handleLoadMore = maxId => {
+    this.props.dispatch(expandHomeTimeline({ maxId }));
   }
 
   componentDidMount () {
@@ -78,7 +79,7 @@ export default class HomeTimeline extends React.PureComponent {
       return;
     } else if (!wasPartial && isPartial) {
       this.polling = setInterval(() => {
-        dispatch(refreshHomeTimeline());
+        dispatch(expandHomeTimeline());
       }, 3000);
     } else if (wasPartial && !isPartial) {
       this._stopPolling();
@@ -93,11 +94,11 @@ export default class HomeTimeline extends React.PureComponent {
   }
 
   render () {
-    const { intl, hasUnread, columnId, multiColumn } = this.props;
+    const { intl, shouldUpdateScroll, hasUnread, columnId, multiColumn } = this.props;
     const pinned = !!columnId;
 
     return (
-      <Column ref={this.setRef}>
+      <Column ref={this.setRef} label={intl.formatMessage(messages.title)}>
         <ColumnHeader
           icon='home'
           active={hasUnread}
@@ -114,9 +115,10 @@ export default class HomeTimeline extends React.PureComponent {
         <StatusListContainer
           trackScroll={!pinned}
           scrollKey={`home_timeline-${columnId}`}
-          loadMore={this.handleLoadMore}
+          onLoadMore={this.handleLoadMore}
           timelineId='home'
           emptyMessage={<FormattedMessage id='empty_column.home' defaultMessage='Your home timeline is empty! Visit {public} or use search to get started and meet other users.' values={{ public: <Link to='/timelines/public'><FormattedMessage id='empty_column.home.public_timeline' defaultMessage='the public timeline' /></Link> }} />}
+          shouldUpdateScroll={shouldUpdateScroll}
         />
       </Column>
     );

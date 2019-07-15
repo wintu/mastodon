@@ -21,6 +21,7 @@
 #  account_id             :bigint(8)        not null
 #  application_id         :bigint(8)
 #  in_reply_to_account_id :bigint(8)
+#  poll_id                :bigint(8)
 #
 
 class Status < ApplicationRecord
@@ -44,6 +45,7 @@ class Status < ApplicationRecord
   belongs_to :account, inverse_of: :statuses
   belongs_to :in_reply_to_account, foreign_key: 'in_reply_to_account_id', class_name: 'Account', optional: true
   belongs_to :conversation, optional: true
+  belongs_to :preloadable_poll, class_name: 'Poll', foreign_key: 'poll_id', optional: true
 
   belongs_to :thread, foreign_key: 'in_reply_to_id', class_name: 'Status', inverse_of: :replies, optional: true
   belongs_to :reblog, foreign_key: 'reblog_of_id', class_name: 'Status', inverse_of: :reblogs, optional: true
@@ -61,12 +63,16 @@ class Status < ApplicationRecord
   has_one :notification, as: :activity, dependent: :destroy
   has_one :stream_entry, as: :activity, inverse_of: :status
   has_one :status_stat, inverse_of: :status
+  has_one :poll, inverse_of: :status, dependent: :destroy
 
   validates :uri, uniqueness: true, presence: true, unless: :local?
   validates :text, presence: true, unless: -> { with_media? || reblog? }
   validates_with StatusLengthValidator
   validates_with DisallowedHashtagsValidator
   validates :reblog, uniqueness: { scope: :account }, if: :reblog?
+  validates :visibility, exclusion: { in: %w(direct limited) }, if: :reblog?
+
+  accepts_nested_attributes_for :poll
 
   default_scope { recent }
 
@@ -78,22 +84,33 @@ class Status < ApplicationRecord
   scope :without_reblogs, -> { where('statuses.reblog_of_id IS NULL') }
   scope :with_public_visibility, -> { where(visibility: :public) }
   scope :tagged_with, ->(tag) { joins(:statuses_tags).where(statuses_tags: { tag_id: tag }) }
-  scope :excluding_silenced_accounts, -> { left_outer_joins(:account).where(accounts: { silenced: false }) }
-  scope :including_silenced_accounts, -> { left_outer_joins(:account).where(accounts: { silenced: true }) }
+  scope :excluding_silenced_accounts, -> { left_outer_joins(:account).where(accounts: { silenced_at: nil }) }
+  scope :including_silenced_accounts, -> { left_outer_joins(:account).where.not(accounts: { silenced_at: nil }) }
   scope :not_excluded_by_account, ->(account) { where.not(account_id: account.excluded_from_timeline_account_ids) }
   scope :not_domain_blocked_by_account, ->(account) { account.excluded_from_timeline_domains.blank? ? left_outer_joins(:account) : left_outer_joins(:account).where('accounts.domain IS NULL OR accounts.domain NOT IN (?)', account.excluded_from_timeline_domains) }
+  scope :tagged_with_all, ->(tags) {
+    Array(tags).map(&:id).map(&:to_i).reduce(self) do |result, id|
+      result.joins("INNER JOIN statuses_tags t#{id} ON t#{id}.status_id = statuses.id AND t#{id}.tag_id = #{id}")
+    end
+  }
+  scope :tagged_with_none, ->(tags) {
+    Array(tags).map(&:id).map(&:to_i).reduce(self) do |result, id|
+      result.joins("LEFT OUTER JOIN statuses_tags t#{id} ON t#{id}.status_id = statuses.id AND t#{id}.tag_id = #{id}")
+            .where("t#{id}.tag_id IS NULL")
+    end
+  }
 
-  cache_associated :account,
-                   :application,
+  cache_associated :application,
                    :media_attachments,
                    :conversation,
                    :status_stat,
                    :tags,
                    :preview_cards,
                    :stream_entry,
-                   active_mentions: :account,
+                   :preloadable_poll,
+                   account: :account_stat,
+                   active_mentions: { account: :account_stat },
                    reblog: [
-                     :account,
                      :application,
                      :stream_entry,
                      :tags,
@@ -101,9 +118,11 @@ class Status < ApplicationRecord
                      :media_attachments,
                      :conversation,
                      :status_stat,
-                     active_mentions: :account,
+                     :preloadable_poll,
+                     account: :account_stat,
+                     active_mentions: { account: :account_stat },
                    ],
-                   thread: :account
+                   thread: { account: :account_stat }
 
   delegate :domain, to: :account, prefix: true
 
@@ -185,6 +204,8 @@ class Status < ApplicationRecord
     public_visibility? || unlisted_visibility?
   end
 
+  alias sign? distributable?
+
   def with_media?
     media_attachments.any?
   end
@@ -194,7 +215,12 @@ class Status < ApplicationRecord
   end
 
   def emojis
-    @emojis ||= CustomEmoji.from_text([spoiler_text, text].join(' '), account.domain)
+    return @emojis if defined?(@emojis)
+
+    fields  = [spoiler_text, text]
+    fields += preloadable_poll.options unless preloadable_poll.nil?
+
+    @emojis = CustomEmoji.from_text(fields.join(' '), account.domain)
   end
 
   def mark_for_mass_destruction!
@@ -225,8 +251,8 @@ class Status < ApplicationRecord
     update_status_stat!(key => [public_send(key) - 1, 0].max)
   end
 
-  after_create  :increment_counter_caches
-  after_destroy :decrement_counter_caches
+  after_create_commit  :increment_counter_caches
+  after_destroy_commit :decrement_counter_caches
 
   after_create_commit :store_uri, if: :local?
   after_create_commit :update_statistics, if: :local?
@@ -238,6 +264,8 @@ class Status < ApplicationRecord
   before_validation :set_visibility
   before_validation :set_conversation
   before_validation :set_local
+
+  after_create :set_poll_id
 
   class << self
     def selectable_visibilities
@@ -337,7 +365,7 @@ class Status < ApplicationRecord
 
       return if account_ids.empty?
 
-      accounts = Account.where(id: account_ids).each_with_object({}) { |a, h| h[a.id] = a }
+      accounts = Account.where(id: account_ids).includes(:account_stat).each_with_object({}) { |a, h| h[a.id] = a }
 
       cached_items.each do |item|
         item.account = accounts[item.account_id]
@@ -415,7 +443,7 @@ class Status < ApplicationRecord
   end
 
   def store_uri
-    update_attribute(:uri, ActivityPub::TagManager.instance.uri_for(self)) if uri.nil?
+    update_column(:uri, ActivityPub::TagManager.instance.uri_for(self)) if uri.nil?
   end
 
   def prepare_contents
@@ -427,13 +455,19 @@ class Status < ApplicationRecord
     self.reblog = reblog.reblog if reblog? && reblog.reblog?
   end
 
+  def set_poll_id
+    update_column(:poll_id, poll.id) unless poll.nil?
+  end
+
   def set_visibility
+    self.visibility = reblog.visibility if reblog? && visibility.nil?
     self.visibility = (account.locked? ? :private : :public) if visibility.nil?
-    self.visibility = reblog.visibility if reblog?
     self.sensitive  = false if sensitive.nil?
   end
 
   def set_conversation
+    self.thread = thread.reblog if thread&.reblog?
+
     self.reply = !(in_reply_to_id.nil? && thread.nil?) unless reply
 
     if reply? && !thread.nil?
@@ -464,12 +498,7 @@ class Status < ApplicationRecord
   def increment_counter_caches
     return if direct_visibility?
 
-    if association(:account).loaded?
-      account.update_attribute(:statuses_count, account.statuses_count + 1)
-    else
-      Account.where(id: account_id).update_all('statuses_count = COALESCE(statuses_count, 0) + 1')
-    end
-
+    account&.increment_count!(:statuses_count)
     reblog&.increment_count!(:reblogs_count) if reblog?
     thread&.increment_count!(:replies_count) if in_reply_to_id.present? && (public_visibility? || unlisted_visibility?)
   end
@@ -477,12 +506,7 @@ class Status < ApplicationRecord
   def decrement_counter_caches
     return if direct_visibility? || marked_for_mass_destruction?
 
-    if association(:account).loaded?
-      account.update_attribute(:statuses_count, [account.statuses_count - 1, 0].max)
-    else
-      Account.where(id: account_id).update_all('statuses_count = GREATEST(COALESCE(statuses_count, 0) - 1, 0)')
-    end
-
+    account&.decrement_count!(:statuses_count)
     reblog&.decrement_count!(:reblogs_count) if reblog?
     thread&.decrement_count!(:replies_count) if in_reply_to_id.present? && (public_visibility? || unlisted_visibility?)
   end

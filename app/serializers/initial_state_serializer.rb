@@ -14,9 +14,12 @@ class InitialStateSerializer < ActiveModel::Serializer
       domain: Rails.configuration.x.local_domain,
       admin: object.admin&.id&.to_s,
       search_enabled: Chewy.enabled?,
+      repository: Mastodon::Version.repository,
+      source_url: Mastodon::Version.source_url,
       version: Mastodon::Version.to_s,
       invites_enabled: Setting.min_invite_role == 'user',
       mascot: instance_presenter.mascot&.file&.url,
+      profile_directory: Setting.profile_directory,
     }
 
     if object.current_account
@@ -28,6 +31,8 @@ class InitialStateSerializer < ActiveModel::Serializer
       store[:display_media]   = object.current_account.user.setting_display_media
       store[:expand_spoilers] = object.current_account.user.setting_expand_spoilers
       store[:reduce_motion]   = object.current_account.user.setting_reduce_motion
+      store[:advanced_layout] = object.current_account.user.setting_advanced_layout
+      store[:is_staff]        = object.current_account.user.staff?
     end
 
     store
@@ -55,7 +60,7 @@ class InitialStateSerializer < ActiveModel::Serializer
   end
 
   def media_attachments
-    { accept_content_types: MediaAttachment::IMAGE_FILE_EXTENSIONS + MediaAttachment::VIDEO_FILE_EXTENSIONS + MediaAttachment::IMAGE_MIME_TYPES + MediaAttachment::VIDEO_MIME_TYPES }
+    { accept_content_types: MediaAttachment.supported_file_extensions + MediaAttachment.supported_mime_types }
   end
 
   private

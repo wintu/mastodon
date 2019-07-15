@@ -137,7 +137,8 @@ class FetchLinkCardService < BaseService
     detector.strip_tags = true
 
     guess      = detector.detect(@html, @html_charset)
-    page       = Nokogiri::HTML(@html, nil, guess&.fetch(:encoding, nil))
+    encoding   = guess&.fetch(:confidence, 0).to_i > 60 ? guess&.fetch(:encoding, nil) : nil
+    page       = Nokogiri::HTML(@html, nil, encoding)
     player_url = meta_property(page, 'twitter:player')
 
     if player_url && !bad_url?(Addressable::URI.parse(player_url))
@@ -164,7 +165,7 @@ class FetchLinkCardService < BaseService
   end
 
   def meta_property(page, property)
-    page.at_xpath("//meta[@property=\"#{property}\"]")&.attribute('content')&.value || page.at_xpath("//meta[@name=\"#{property}\"]")&.attribute('content')&.value
+    page.at_xpath("//meta[contains(concat(' ', normalize-space(@property), ' '), ' #{property} ')]")&.attribute('content')&.value || page.at_xpath("//meta[@name=\"#{property}\"]")&.attribute('content')&.value
   end
 
   def lock_options

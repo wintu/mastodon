@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 class ActivityPub::Activity::Follow < ActivityPub::Activity
+  include Payloadable
+
   def perform
     target_account = account_from_uri(object_uri)
 
     return if target_account.nil? || !target_account.local? || delete_arrived_first?(@json['id']) || @account.requested?(target_account)
 
-    if target_account.blocking?(@account) || target_account.domain_blocking?(@account.domain)
+    if target_account.blocking?(@account) || target_account.domain_blocking?(@account.domain) || target_account.moved?
       reject_follow_request!(target_account)
       return
     end
@@ -28,7 +30,7 @@ class ActivityPub::Activity::Follow < ActivityPub::Activity
   end
 
   def reject_follow_request!(target_account)
-    json = Oj.dump(ActivityPub::LinkedDataSignature.new(ActiveModelSerializers::SerializableResource.new(FollowRequest.new(account: @account, target_account: target_account, uri: @json['id']), serializer: ActivityPub::RejectFollowSerializer, adapter: ActivityPub::Adapter).as_json).sign!(target_account))
+    json = Oj.dump(serialize_payload(FollowRequest.new(account: @account, target_account: target_account, uri: @json['id']), ActivityPub::RejectFollowSerializer))
     ActivityPub::DeliveryWorker.perform_async(json, target_account.id, @account.inbox_url)
   end
 end

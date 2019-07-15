@@ -24,6 +24,7 @@ class ActivityPub::ProcessAccountService < BaseService
         create_account if @account.nil?
         update_account
         process_tags
+        process_attachments
       else
         raise Mastodon::RaceConditionError
       end
@@ -33,8 +34,12 @@ class ActivityPub::ProcessAccountService < BaseService
 
     after_protocol_change! if protocol_changed?
     after_key_change! if key_changed? && !@options[:signed_with_known_key]
-    check_featured_collection! if @account.featured_collection_url.present?
-    check_links! unless @account.fields.empty?
+    clear_tombstones! if key_changed?
+
+    unless @options[:only_key]
+      check_featured_collection! if @account.featured_collection_url.present?
+      check_links! unless @account.fields.empty?
+    end
 
     @account
   rescue Oj::ParseError
@@ -45,20 +50,20 @@ class ActivityPub::ProcessAccountService < BaseService
 
   def create_account
     @account = Account.new
-    @account.protocol    = :activitypub
-    @account.username    = @username
-    @account.domain      = @domain
-    @account.suspended   = true if auto_suspend?
-    @account.silenced    = true if auto_silence?
-    @account.private_key = nil
+    @account.protocol     = :activitypub
+    @account.username     = @username
+    @account.domain       = @domain
+    @account.private_key  = nil
+    @account.suspended_at = domain_block.created_at if auto_suspend?
+    @account.silenced_at = domain_block.created_at if auto_silence?
   end
 
   def update_account
-    @account.last_webfingered_at = Time.now.utc
+    @account.last_webfingered_at = Time.now.utc unless @options[:only_key]
     @account.protocol            = :activitypub
 
     set_immediate_attributes!
-    set_fetchable_attributes!
+    set_fetchable_attributes! unless @options[:only_keys]
 
     @account.save_with_optional_media!
   end
@@ -75,6 +80,7 @@ class ActivityPub::ProcessAccountService < BaseService
     @account.note                    = @json['summary'] || ''
     @account.locked                  = @json['manuallyApprovesFollowers'] || false
     @account.fields                  = property_values || {}
+    @account.also_known_as           = as_array(@json['alsoKnownAs'] || []).map { |item| value_or_id(item) }
     @account.actor_type              = actor_type
   end
 
@@ -146,7 +152,7 @@ class ActivityPub::ProcessAccountService < BaseService
 
   def property_values
     return unless @json['attachment'].is_a?(Array)
-    @json['attachment'].select { |attachment| attachment['type'] == 'PropertyValue' }.map { |attachment| attachment.slice('name', 'value') }
+    as_array(@json['attachment']).select { |attachment| attachment['type'] == 'PropertyValue' }.map { |attachment| attachment.slice('name', 'value') }
   end
 
   def mismatching_origin?(url)
@@ -199,11 +205,15 @@ class ActivityPub::ProcessAccountService < BaseService
 
   def domain_block
     return @domain_block if defined?(@domain_block)
-    @domain_block = DomainBlock.find_by(domain: @domain)
+    @domain_block = DomainBlock.rule_for(@domain)
   end
 
   def key_changed?
     !@old_public_key.nil? && @old_public_key != @account.public_key
+  end
+
+  def clear_tombstones!
+    Tombstone.where(account_id: @account.id).delete_all
   end
 
   def protocol_changed?
@@ -222,6 +232,23 @@ class ActivityPub::ProcessAccountService < BaseService
     end
   end
 
+  def process_attachments
+    return if @json['attachment'].blank?
+
+    previous_proofs = @account.identity_proofs.to_a
+    current_proofs  = []
+
+    as_array(@json['attachment']).each do |attachment|
+      next unless equals_or_includes?(attachment['type'], 'IdentityProof')
+      current_proofs << process_identity_proof(attachment)
+    end
+
+    previous_proofs.each do |previous_proof|
+      next if current_proofs.any? { |current_proof| current_proof.id == previous_proof.id }
+      previous_proof.delete
+    end
+  end
+
   def process_emoji(tag)
     return if skip_download?
     return if tag['name'].blank? || tag['icon'].blank? || tag['icon']['url'].blank?
@@ -237,5 +264,13 @@ class ActivityPub::ProcessAccountService < BaseService
     emoji ||= CustomEmoji.new(domain: @account.domain, shortcode: shortcode, uri: uri)
     emoji.image_remote_url = image_url
     emoji.save
+  end
+
+  def process_identity_proof(attachment)
+    provider          = attachment['signatureAlgorithm']
+    provider_username = attachment['name']
+    token             = attachment['signatureValue']
+
+    @account.identity_proofs.where(provider: provider, provider_username: provider_username).find_or_create_by(provider: provider, provider_username: provider_username, token: token)
   end
 end

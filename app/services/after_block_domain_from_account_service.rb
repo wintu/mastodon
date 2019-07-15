@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class AfterBlockDomainFromAccountService < BaseService
+  include Payloadable
+
   # This service does not create an AccountDomainBlock record,
   # it's meant to be called after such a record has been created
   # synchronously, to "clean up"
@@ -31,12 +33,6 @@ class AfterBlockDomainFromAccountService < BaseService
 
     return unless follow.account.activitypub?
 
-    json = Oj.dump(ActivityPub::LinkedDataSignature.new(ActiveModelSerializers::SerializableResource.new(
-      follow,
-      serializer: ActivityPub::RejectFollowSerializer,
-      adapter: ActivityPub::Adapter
-    ).as_json).sign!(@account))
-
-    ActivityPub::DeliveryWorker.perform_async(json, @account.id, follow.account.inbox_url)
+    ActivityPub::DeliveryWorker.perform_async(Oj.dump(serialize_payload(follow, ActivityPub::RejectFollowSerializer)), @account.id, follow.account.inbox_url)
   end
 end

@@ -14,7 +14,7 @@ class Api::V1::Timelines::TagController < Api::BaseController
   private
 
   def load_tag
-    @tag = Tag.find_by(name: params[:id].downcase)
+    @tag = Tag.find_normalized(params[:id])
   end
 
   def load_statuses
@@ -45,7 +45,7 @@ class Api::V1::Timelines::TagController < Api::BaseController
   end
 
   def tag_timeline_statuses
-    Status.as_tag_timeline(@tag, current_account, truthy_param?(:local))
+    HashtagQueryService.new.call(@tag, params.slice(:any, :all, :none), current_account, truthy_param?(:local))
   end
 
   def insert_pagination_headers

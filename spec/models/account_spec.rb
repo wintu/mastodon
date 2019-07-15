@@ -558,6 +558,11 @@ RSpec.describe Account, type: :model do
       expect(account).to model_have_error_on_field(:username)
     end
 
+    it 'squishes the username before validation' do
+      account = Fabricate(:account, domain: nil, username: " \u3000bob \t \u00a0 \n ")
+      expect(account.username).to eq 'bob'
+    end
+
     context 'when is local' do
       it 'is invalid if the username is not unique in case-insensitive comparison among local accounts' do
         account_1 = Fabricate(:account, username: 'the_doctor')
@@ -596,8 +601,8 @@ RSpec.describe Account, type: :model do
         expect(account).to model_have_error_on_field(:display_name)
       end
 
-      it 'is invalid if the note is longer than 160 characters' do
-        account = Fabricate.build(:account, note: Faker::Lorem.characters(161))
+      it 'is invalid if the note is longer than 500 characters' do
+        account = Fabricate.build(:account, note: Faker::Lorem.characters(501))
         account.valid?
         expect(account).to model_have_error_on_field(:note)
       end
@@ -642,8 +647,8 @@ RSpec.describe Account, type: :model do
         expect(account).not_to model_have_error_on_field(:display_name)
       end
 
-      it 'is valid even if the note is longer than 160 characters' do
-        account = Fabricate.build(:account, domain: 'domain', note: Faker::Lorem.characters(161))
+      it 'is valid even if the note is longer than 500 characters' do
+        account = Fabricate.build(:account, domain: 'domain', note: Faker::Lorem.characters(501))
         account.valid?
         expect(account).not_to model_have_error_on_field(:note)
       end
@@ -679,6 +684,23 @@ RSpec.describe Account, type: :model do
         Fabricate(:account, username: 'prefix_and_pattern')
 
         expect(Account.matches_username('pattern')).to eq [match]
+      end
+    end
+
+    describe 'by_domain_and_subdomains' do
+      it 'returns exact domain matches' do
+        account = Fabricate(:account, domain: 'example.com')
+        expect(Account.by_domain_and_subdomains('example.com')).to eq [account]
+      end
+
+      it 'returns subdomains' do
+        account = Fabricate(:account, domain: 'foo.example.com')
+        expect(Account.by_domain_and_subdomains('example.com')).to eq [account]
+      end
+
+      it 'does not return partially matching domains' do
+        account = Fabricate(:account, domain: 'grexample.com')
+        expect(Account.by_domain_and_subdomains('example.com')).to_not eq [account]
       end
     end
 
@@ -758,24 +780,6 @@ RSpec.describe Account, type: :model do
         account_1 = Fabricate(:account, suspended: true)
         account_2 = Fabricate(:account, suspended: false)
         expect(Account.suspended).to match_array([account_1])
-      end
-    end
-
-    describe 'without_followers' do
-      it 'returns a relation of accounts without followers' do
-        account_1 = Fabricate(:account)
-        account_2 = Fabricate(:account)
-        Fabricate(:follow, account: account_1, target_account: account_2)
-        expect(Account.without_followers).to match_array([account_1])
-      end
-    end
-
-    describe 'with_followers' do
-      it 'returns a relation of accounts with followers' do
-        account_1 = Fabricate(:account)
-        account_2 = Fabricate(:account)
-        Fabricate(:follow, account: account_1, target_account: account_2)
-        expect(Account.with_followers).to match_array([account_2])
       end
     end
   end

@@ -25,9 +25,12 @@ import height_cache from './height_cache';
 import custom_emojis from './custom_emojis';
 import lists from './lists';
 import listEditor from './list_editor';
+import listAdder from './list_adder';
 import filters from './filters';
 import conversations from './conversations';
 import suggestions from './suggestions';
+import polls from './polls';
+import identity_proofs from './identity_proofs';
 
 const reducers = {
   dropdown_menu,
@@ -54,11 +57,14 @@ const reducers = {
   notifications,
   height_cache,
   custom_emojis,
+  identity_proofs,
   lists,
   listEditor,
+  listAdder,
   filters,
   conversations,
   suggestions,
+  polls,
 };
 
 export default combineReducers(reducers);

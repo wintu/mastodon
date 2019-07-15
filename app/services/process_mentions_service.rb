@@ -2,6 +2,7 @@
 
 class ProcessMentionsService < BaseService
   include StreamEntryRenderer
+  include Payloadable
 
   # Scan status for mentions and fetch remote mentioned users, create
   # local mention pointers, send Salmon notifications to mentioned
@@ -25,7 +26,7 @@ class ProcessMentionsService < BaseService
         end
       end
 
-      next match if mention_undeliverable?(mentioned_account) || mentioned_account&.suspended
+      next match if mention_undeliverable?(mentioned_account) || mentioned_account&.suspended?
 
       mentions << mentioned_account.mentions.where(status: status).first_or_create(status: status)
 
@@ -60,11 +61,8 @@ class ProcessMentionsService < BaseService
   end
 
   def activitypub_json
-    @activitypub_json ||= Oj.dump(ActivityPub::LinkedDataSignature.new(ActiveModelSerializers::SerializableResource.new(
-      @status,
-      serializer: ActivityPub::ActivitySerializer,
-      adapter: ActivityPub::Adapter
-    ).as_json).sign!(@status.account))
+    return @activitypub_json if defined?(@activitypub_json)
+    @activitypub_json = Oj.dump(serialize_payload(@status, ActivityPub::ActivitySerializer, signer: @status.account))
   end
 
   def resolve_account_service

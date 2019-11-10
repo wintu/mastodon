@@ -5,13 +5,14 @@ class GamioController < ApplicationController
       result = { result: 'token_error' }.to_json
       return render json: result
     end
-    user = User.new.tap(&:build_account)
-    user.account.username = params[:username]
-    user.email = params[:email]
-    user.password = params[:password]
-    user.password_confirmation = params[:password]
-    user.confirmed_at = Time.now
-    user.save
+    user = User.new(
+      email: params[:email],
+      password: params[:password],
+      agreement: true, approved: true,
+      admin: false,
+      moderator: false,
+      confirmed_at: Time.now.utc
+    )
     if user.errors.present?
       result = { result: 'db_error', message: user.errors.messages.map { |k, e| e }.join(',') }.to_json
       return render json: result

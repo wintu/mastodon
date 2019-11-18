@@ -5,7 +5,7 @@ class GamioController < ApplicationController
       result = { result: 'token_error' }.to_json
       return render json: result
     end
-    user = User.new(
+    user = User.create!(
       email: params[:email],
       password: params[:password],
       agreement: true, approved: true,
